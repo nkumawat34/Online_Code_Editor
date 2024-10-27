@@ -39,6 +39,13 @@ const CodeEditor = () => {
       setUsers(connectedUsers);
     });
 
+<<<<<<< HEAD
+=======
+    socket.on('chatReset', () => {
+      setMessages([]);
+    });
+
+>>>>>>> 0ff1172 (Latest Project)
     // Fetch previous messages from the server on load
     const fetchMessages = async () => {
       try {
@@ -56,6 +63,10 @@ const CodeEditor = () => {
       socket.off('codeChange');
       socket.off('chatMessage');
       socket.off('updateUserList');
+<<<<<<< HEAD
+=======
+      socket.off('chatReset');
+>>>>>>> 0ff1172 (Latest Project)
       socket.disconnect();
     };
   }, []);
@@ -110,6 +121,35 @@ const CodeEditor = () => {
       alert('File saved successfully!');
     } catch (error) {
       console.error('Save canceled or failed:', error);
+<<<<<<< HEAD
+    }
+  };
+
+  const sendMessage = async () => {
+    if (sending) return; // Prevent multiple sends
+    if (message.trim()) {
+      const msgData = { id: Date.now(), user: name, text: message };
+      
+      // Emit the message
+      console.log('Sending message:', msgData); // Debugging log
+      setSending(true); // Set sending to true
+      socket.emit('chatMessage', msgData);
+      
+      // Update local messages state
+     // setMessages((prevMessages) => [...prevMessages, msgData]);
+      
+      setMessage('');
+
+      // Save the message to MongoDB
+      try {
+        await axios.post('http://localhost:4000/messages', msgData);
+      } catch (error) {
+        console.error('Error saving message to the database:', error);
+      } finally {
+        setSending(false); // Reset sending state after the operation
+      }
+=======
+>>>>>>> 0ff1172 (Latest Project)
     }
   };
 
@@ -139,6 +179,15 @@ const CodeEditor = () => {
     }
   };
 
+  const resetChat = async () => {
+    try {
+      socket.emit('resetChat');
+      await axios.delete('http://localhost:4000/messages');
+      setMessages([]);
+    } catch (error) {
+      console.error('Error resetting chat:', error);
+    }
+  };
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
       <h2 className="text-3xl font-bold mb-6">Collaborative Code Editor</h2>
@@ -177,6 +226,7 @@ const CodeEditor = () => {
           {loading ? 'Running...' : 'Run'}
         </button>
         <button onClick={saveFile} className="p-2 bg-green-500 text-white rounded">Save Code</button>
+        
       </div>
 
       <div className="w-full max-w-4xl mb-4">
@@ -209,10 +259,14 @@ const CodeEditor = () => {
             placeholder="Type your message..."
           />
           <button onClick={sendMessage} className="p-2 bg-blue-500 text-white rounded" disabled={sending}>Send</button>
+          <button onClick={resetChat} className="p-2 bg-red-500 text-white rounded ml-2">
+          Reset Chat
+        </button>
         </div>
       </div>
     </div>
   );
 };
+
 
 export default CodeEditor;

@@ -47,6 +47,12 @@ io.on('connection', (socket) => {
     io.emit('chatMessage', data);
   });
 
+    // Listen for chat reset
+    socket.on('resetChat', async () => {
+      await Message.deleteMany({}); // Delete all messages from MongoDB
+      io.emit('chatReset'); // Notify all clients to reset their chat
+    });
+    
   // Handle user disconnecting
   socket.on('disconnect', () => {
     console.log('A user disconnected');
@@ -77,6 +83,18 @@ app.post('/messages', async (req, res) => {
   }
 });
 
+<<<<<<< HEAD
+=======
+app.delete('/messages', async (req, res) => {
+  try {
+    await Message.deleteMany({});
+    res.status(200).json({ message: 'Chat reset successful' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error resetting chat' });
+  }
+});
+
+>>>>>>> 0ff1172 (Latest Project)
 // Start the server
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
