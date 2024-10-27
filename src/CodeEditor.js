@@ -3,7 +3,6 @@ import Editor from '@monaco-editor/react';
 import { io } from 'socket.io-client';
 import axios from 'axios';
 
-// Ensure socket is created outside any component or hook
 const socket = io('http://localhost:4000', { autoConnect: false });
 
 const CodeEditor = () => {
@@ -13,39 +12,63 @@ const CodeEditor = () => {
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState('');
-  const [name,setName]=useState('')
-  // Connect socket only once on mount
+  const [name, setName] = useState('');
+  const [users, setUsers] = useState([]);
+  const [sending, setSending] = useState(false); // Track if a message is being sent
+
   useEffect(() => {
+    const savedCode = localStorage.getItem('code');
+    if (savedCode) setCode(savedCode);
+
     socket.connect();
 
-    socket.on('codeChange', (data) => setCode(data.code));
+    // Ask for the user's name when connecting
+    const userName = prompt('Enter your name:');
+    if (userName) {
+      setName(userName);
+      socket.emit('userJoin', userName);
+    }
 
-    // Listener for chat messages
+    // Set up socket listeners
+    socket.on('codeChange', (data) => setCode(data.code));
     socket.on('chatMessage', (data) => {
-      setMessages((prevMessages) => {
-        // Prevent duplicate messages by checking message ID
-        if (!prevMessages.some((msg) => msg.id === data.id)) {
-          return [...prevMessages, data];
-        }
-        return prevMessages;
-      });
+      console.log('Message received:', data); // Debugging log
+      setMessages((prevMessages) => [...prevMessages, data]);
+    });
+    socket.on('updateUserList', (connectedUsers) => {
+      setUsers(connectedUsers);
     });
 
-    // Cleanup on unmount
+    // Fetch previous messages from the server on load
+    const fetchMessages = async () => {
+      try {
+        const response = await axios.get('http://localhost:4000/messages');
+        setMessages(response.data);
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+      }
+    };
+
+    fetchMessages();
+
+    // Cleanup function to remove listeners
     return () => {
       socket.off('codeChange');
       socket.off('chatMessage');
+      socket.off('updateUserList');
       socket.disconnect();
     };
   }, []);
 
-  // Handle code change
+  useEffect(() => {
+    localStorage.setItem('code', code);
+  }, [code]);
+
   const handleCodeChange = (value) => {
     setCode(value);
     socket.emit('codeChange', { code: value, language });
   };
 
-  // Handle language change
   const handleLanguageChange = (e) => {
     const newLanguage = e.target.value;
     setLanguage(newLanguage);
@@ -53,7 +76,6 @@ const CodeEditor = () => {
     socket.emit('codeChange', { code: `// Write your ${newLanguage} code here...`, language: newLanguage });
   };
 
-  // Handle code execution
   const runCode = async () => {
     setLoading(true);
     setOutput('');
@@ -71,13 +93,49 @@ const CodeEditor = () => {
     }
   };
 
-  // Send a chat message with unique ID
-  const sendMessage = () => {
+  const saveFile = async () => {
+    try {
+      const fileHandle = await window.showSaveFilePicker({
+        suggestedName: `code.${language}`,
+        types: [
+          {
+            description: 'Code File',
+            accept: { 'text/plain': ['.js', '.py', '.cpp', '.java'] },
+          },
+        ],
+      });
+      const writable = await fileHandle.createWritable();
+      await writable.write(code);
+      await writable.close();
+      alert('File saved successfully!');
+    } catch (error) {
+      console.error('Save canceled or failed:', error);
+    }
+  };
+
+  const sendMessage = async () => {
+    if (sending) return; // Prevent multiple sends
     if (message.trim()) {
       const msgData = { id: Date.now(), user: name, text: message };
+      
+      // Emit the message
+      console.log('Sending message:', msgData); // Debugging log
+      setSending(true); // Set sending to true
       socket.emit('chatMessage', msgData);
-      setMessages((prevMessages) => [...prevMessages, msgData]);
+      
+      // Update local messages state
+     // setMessages((prevMessages) => [...prevMessages, msgData]);
+      
       setMessage('');
+
+      // Save the message to MongoDB
+      try {
+        await axios.post('http://localhost:4000/messages', msgData);
+      } catch (error) {
+        console.error('Error saving message to the database:', error);
+      } finally {
+        setSending(false); // Reset sending state after the operation
+      }
     }
   };
 
@@ -109,22 +167,32 @@ const CodeEditor = () => {
             minimap: { enabled: false },
             fontSize: 14,
             automaticLayout: true,
+            scrollBeyondLastLine: false,
           }}
         />
       </div>
 
-      <button onClick={runCode} className="mb-4 p-2 bg-blue-500 text-white rounded">
-        {loading ? 'Running...' : 'Run'}
-      </button>
+      <div className="flex mb-4 space-x-4">
+        <button onClick={runCode} className="p-2 bg-blue-500 text-white rounded">
+          {loading ? 'Running...' : 'Run'}
+        </button>
+        <button onClick={saveFile} className="p-2 bg-green-500 text-white rounded">Save Code</button>
+      </div>
 
       <div className="w-full max-w-4xl mb-4">
         <h3 className="text-lg font-semibold">Output:</h3>
         <pre className="bg-gray-200 p-4 border border-gray-300 rounded">{output}</pre>
       </div>
-          <div className='flex justify-center my-4'>
-            <label className='mx-3'>Name</label>
-            <input className='border' onChange={(e)=>setName(e.target.value)}/>
-          </div>
+
+      <div className="w-full max-w-4xl p-4 bg-white border border-gray-300 rounded mb-4">
+        <h3 className="text-lg font-semibold">Connected Users:</h3>
+        <ul className="list-disc pl-5">
+          {users.map((user, index) => (
+            <li key={index}>{user.name}</li>
+          ))}
+        </ul>
+      </div>
+
       <div className="w-full max-w-4xl p-4 bg-white border border-gray-300 rounded">
         <h3 className="text-lg font-semibold">Chat</h3>
         <div className="chat-box mb-4 h-48 overflow-y-auto bg-gray-100 p-2 rounded">
@@ -137,10 +205,10 @@ const CodeEditor = () => {
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder="Type a message..."
-            className="flex-grow p-2 border border-gray-300 rounded-l"
+            className="border p-2 flex-grow mr-2"
+            placeholder="Type your message..."
           />
-          <button onClick={sendMessage} className="p-2 bg-blue-500 text-white rounded-r">Send</button>
+          <button onClick={sendMessage} className="p-2 bg-blue-500 text-white rounded" disabled={sending}>Send</button>
         </div>
       </div>
     </div>
