@@ -83,8 +83,7 @@ app.post('/messages', async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
-=======
+
 app.delete('/messages', async (req, res) => {
   try {
     await Message.deleteMany({});
@@ -94,7 +93,6 @@ app.delete('/messages', async (req, res) => {
   }
 });
 
->>>>>>> 0ff1172 (Latest Project)
 // Start the server
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
