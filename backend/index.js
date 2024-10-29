@@ -13,7 +13,7 @@ app.use(express.json()); // Middleware to parse JSON
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:3000',
+    origin: 'https://online-code-editor-eb81.onrender.com',
     methods: ['GET', 'POST'],
   },
 });
