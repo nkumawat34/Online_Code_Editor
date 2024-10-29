@@ -3,7 +3,7 @@ import Editor from '@monaco-editor/react';
 import { io } from 'socket.io-client';
 import axios from 'axios';
 
-const socket = io('http://localhost:4000', { autoConnect: false });
+const socket = io('https://online-code-editor-backend-x96n.onrender.com', { autoConnect: false });
 
 const CodeEditor = () => {
   const [code, setCode] = useState('// Write your code here...');
@@ -46,7 +46,7 @@ const CodeEditor = () => {
     // Fetch previous messages from the server on load
     const fetchMessages = async () => {
       try {
-        const response = await axios.get('http://localhost:4000/messages');
+        const response = await axios.get('https://online-code-editor-backend-x96n.onrender.com/messages');
         setMessages(response.data);
       } catch (error) {
         console.error('Error fetching messages:', error);
@@ -135,7 +135,7 @@ const CodeEditor = () => {
 
       // Save the message to MongoDB
       try {
-        await axios.post('http://localhost:4000/messages', msgData);
+        await axios.post('https://online-code-editor-backend-x96n.onrender.com/messages', msgData);
       } catch (error) {
         console.error('Error saving message to the database:', error);
       } finally {
@@ -147,7 +147,7 @@ const CodeEditor = () => {
   const resetChat = async () => {
     try {
       socket.emit('resetChat');
-      await axios.delete('http://localhost:4000/messages');
+      await axios.delete('https://online-code-editor-backend-x96n.onrender.com/messages');
       setMessages([]);
     } catch (error) {
       console.error('Error resetting chat:', error);
