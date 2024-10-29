@@ -39,13 +39,10 @@ const CodeEditor = () => {
       setUsers(connectedUsers);
     });
 
-<<<<<<< HEAD
-=======
     socket.on('chatReset', () => {
       setMessages([]);
     });
 
->>>>>>> 0ff1172 (Latest Project)
     // Fetch previous messages from the server on load
     const fetchMessages = async () => {
       try {
@@ -63,10 +60,7 @@ const CodeEditor = () => {
       socket.off('codeChange');
       socket.off('chatMessage');
       socket.off('updateUserList');
-<<<<<<< HEAD
-=======
       socket.off('chatReset');
->>>>>>> 0ff1172 (Latest Project)
       socket.disconnect();
     };
   }, []);
@@ -121,35 +115,6 @@ const CodeEditor = () => {
       alert('File saved successfully!');
     } catch (error) {
       console.error('Save canceled or failed:', error);
-<<<<<<< HEAD
-    }
-  };
-
-  const sendMessage = async () => {
-    if (sending) return; // Prevent multiple sends
-    if (message.trim()) {
-      const msgData = { id: Date.now(), user: name, text: message };
-      
-      // Emit the message
-      console.log('Sending message:', msgData); // Debugging log
-      setSending(true); // Set sending to true
-      socket.emit('chatMessage', msgData);
-      
-      // Update local messages state
-     // setMessages((prevMessages) => [...prevMessages, msgData]);
-      
-      setMessage('');
-
-      // Save the message to MongoDB
-      try {
-        await axios.post('http://localhost:4000/messages', msgData);
-      } catch (error) {
-        console.error('Error saving message to the database:', error);
-      } finally {
-        setSending(false); // Reset sending state after the operation
-      }
-=======
->>>>>>> 0ff1172 (Latest Project)
     }
   };
 
